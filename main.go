@@ -1,41 +1,93 @@
 package main
 
 import (
+	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"encoding/json"
+
+	"modules/transform_html"
+
+	"github.com/akamensky/argparse"
 )
 
-func main() {
+func wlk_(
+	url string, rule []* transform_html.ParserTransfromRule,
+) {
+	
+	ret_data := map[string]any{}
 
-	e := echo.New()
-
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-
-	e.GET("/", func(c echo.Context) error {
-		return c.HTML(http.StatusOK, "Hello, Docker! <3")
-	})
-
-	e.GET("/health", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, struct{ Status string }{Status: "OK"})
-	})
-
-	httpPort := os.Getenv("PORT")
-	if httpPort == "" {
-		httpPort = "8080"
+	req, err := http.NewRequest(`GET`, url, nil)
+	req.Header.Set(`user-agent`, `Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0`)
+	resp, err := http.DefaultClient.Do(req)
+	if resp.StatusCode >= 400 {
+		fmt.Printf(`%d`, resp.StatusCode)
+		return
 	}
+	fmt.Printf("\n%s", err)
+	bta, err := io.ReadAll(resp.Body)
+	fmt.Printf("\n%s", err)
+	
+	err = transform_html.TransformHtmlText(&ret_data, string( bta ), rule)
+	//lst := ret_data[`menu_items`].(*list.List)
+	
+	fmt.Printf("\nerr %s", err)
+	bta2, err := json.Marshal(ret_data)
+	fmt.Printf(`\n%s`, bta2)
 
-	e.Logger.Fatal(e.Start(":" + httpPort))
 }
 
-// Simple implementation of an integer minimum
-// Adapted from: https://gobyexample.com/testing-and-benchmarking
-func IntMin(a, b int) int {
-	if a < b {
-		return a
+func wlk_2(walker *Walker, url string, rule []* transform_html.ParserTransfromRule,) {
+	
+	ret_data, err := walker.extract_data(url, rule)
+	fmt.Printf("\nerr %s", err)
+	bta2, err := json.Marshal(ret_data)
+	fmt.Printf(`\n%s`, bta2)
+}
+
+func main() {
+	start_time := time.Now()
+	// Create new parser object
+	parser := argparse.NewParser("print", "Prints provided string to stdout")
+	// Create string flag
+	etl_config_path := parser.String("p", "etl_config_path", &argparse.Options{Required: true, Help: "Etl config file location"})
+	source_name := parser.String("s", "source_name", &argparse.Options{Required: true, Help: "Source name from config file"})
+	filter_url := parser.String("f", "filter_url", &argparse.Options{Required: true, Help: "Filter url pattern"})
+	output_file_path := parser.String("o", "output_file_path", &argparse.Options{Required: true, Help: "Output file with JSON format"})
+	begin_page := parser.Int("b", "begin_page", &argparse.Options{Required: true, Help: "Scraping will start from begin page"})
+	end_page := parser.Int("e", "end_page", &argparse.Options{Required: true, Help: "Scraping will stop on end page"})
+	// Parse input
+	err := parser.Parse(os.Args)
+	if err != nil {
+		// In case of error print error and print usage
+		// This can also be done by passing -h or --help flags
+		fmt.Print(parser.Usage(err))
+		return
 	}
-	return b
+	// Finally print the collected string
+	walker, err := (&Walker{}).Init(*source_name, *etl_config_path)
+	if err != nil {
+		panic(err)
+	}
+	output := map[uint]any{}
+	err = walker.Walk(*filter_url, uint(*begin_page), uint(*end_page), func(tm []*transform_html.TransformMap, num uint) {
+		output[num] = tm
+		fmt.Printf("\n Handled menu page %v count %v", num, len(tm))
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	data := OutputJson{*begin_page, *end_page, *etl_config_path, *source_name, output}
+	json_str, err := json.Marshal(data)
+	if err != nil {
+		panic(err)
+	}
+	
+	ioutil.WriteFile(*output_file_path, json_str, os.ModeAppend)
+	fmt.Printf("\n Done in %v seconds", time.Now().Sub(start_time))
 }

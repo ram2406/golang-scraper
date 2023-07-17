@@ -1,0 +1,26 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+     "cwd": "${workspaceFolder}",
+      
+      "name": " main",
+      "type": "go",
+
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}",
+      "args": [
+        "-b", "2", 
+        "-e", "2",
+        "-p", "L:\\dev\\property_globber\\aparts\\dags\\etl-config.yaml",
+        "-s", "propertyfinder",
+        "-f", "/en/search?c=1&ob=mr&pf=0&pt=1000000",
+        "-o", "./output.json",
+      ]
+    }
+  ]
+}

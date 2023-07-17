@@ -1,0 +1,7 @@
+version: '3'
+
+services:
+  docker-gs-ping:
+    build: .
+    ports:
+      - 8080:8080

@@ -1,0 +1,9 @@
+{
+  "[go]": {
+    "editor.formatOnSave": false
+  },
+  "workbench.colorCustomizations": {
+    "titleBar.activeBackground": "#00724c"
+
+  }
+}
