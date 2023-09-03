@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"runtime"
 	"time"
 
 	"encoding/json"
@@ -60,6 +61,9 @@ func main() {
 	output_file_path := parser.String("o", "output_file_path", &argparse.Options{Required: true, Help: "Output file with JSON format"})
 	begin_page := parser.Int("b", "begin_page", &argparse.Options{Required: true, Help: "Scraping will start from begin page"})
 	end_page := parser.Int("e", "end_page", &argparse.Options{Required: true, Help: "Scraping will stop on end page"})
+	max_os_threads := parser.Int("m", "max_os_threads", &argparse.Options{Required: false, Help: "Set max OS threads"})
+	goroutine_disable := parser.Flag("d", "goroutine_disable", &argparse.Options{Required: false, Help: "Work without green thread and go-routines", Default: false})
+	
 	// Parse input
 	err := parser.Parse(os.Args)
 	if err != nil {
@@ -68,13 +72,20 @@ func main() {
 		fmt.Print(parser.Usage(err))
 		return
 	}
+	if max_os_threads != nil {
+		runtime.GOMAXPROCS(*max_os_threads)
+	}
 	// Finally print the collected string
 	walker, err := (&Walker{}).Init(*source_name, *etl_config_path)
 	if err != nil {
 		panic(err)
 	}
 	output := map[uint]any{}
-	err = walker.Walk(*filter_url, uint(*begin_page), uint(*end_page), func(tm []*transform_html.TransformMap, num uint) {
+	walk_fun := walker.Walk
+	if *goroutine_disable {
+		walk_fun = walker.WalkSync
+	}
+	err = walk_fun(*filter_url, uint(*begin_page), uint(*end_page), func(tm []*transform_html.TransformMap, num uint) {
 		output[num] = tm
 		fmt.Printf("\n Handled menu page %v count %v", num, len(tm))
 	})
@@ -88,6 +99,10 @@ func main() {
 		panic(err)
 	}
 	
-	ioutil.WriteFile(*output_file_path, json_str, os.ModeAppend)
-	fmt.Printf("\n Done in %v seconds", time.Now().Sub(start_time))
+	err = ioutil.WriteFile(*output_file_path, json_str, os.ModeAppend)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("\n Done in %v seconds, wrote to %v", time.Now().Sub(start_time), *output_file_path)
 }

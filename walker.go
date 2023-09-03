@@ -5,12 +5,15 @@ import (
 	"io/ioutil"
 	"regexp"
 	"strconv"
+	"sync"
 	"time"
 
 	"gopkg.in/yaml.v3"
 
 	"modules/transform_html"
 	"modules/utils"
+
+	"golang.org/x/sync/errgroup"
 )
 
 var py_sub_rx *regexp.Regexp = regexp.MustCompile(`\\\d+`)
@@ -123,29 +126,57 @@ func extract_value[T any](m *transform_html.TransformMap, key string) T {
 
 type ConsumerType = func (data []*transform_html.TransformMap, page_num uint)
 
-func (w *Walker) Walk(filter_url string, begin, end uint, consumer ConsumerType) (err error) {
+func (w *Walker) WalkSync(filter_url string, begin, end uint, consumer ConsumerType) (err error) {
 	for num := begin; num < (end +1); num++ {
-		var menu *transform_html.TransformMap; 
-		menu, err = w.parse_menu_page(filter_url, num)
+		num := num
+		err = walk_on_menu_page(w, filter_url, num, consumer)
 		if err != nil {
 			return
 		}
-	  menu_items := extract_value[ *transform_html.TransformList ](menu, `menu_items`)
-		if menu_items == nil {
-			consumer([]*map[string]any{}, num)
-			continue
-		}
-		card_data_list := []*transform_html.TransformMap{}
-		for _, card_any := range (*menu_items) {
-			card := card_any.(*transform_html.TransformMap)
-			var card_data *transform_html.TransformMap
-			card_data, err = w.parse_card_page((*card)[`url`].(string))
-			if err != nil {
-				return
-			}
-			card_data_list = append(card_data_list, card_data)
-		}
-		consumer(card_data_list, num)
 	}
 	return
+}
+
+
+func (w *Walker) Walk(filter_url string, begin, end uint, consumer ConsumerType) (err error) {
+	grp := new(errgroup.Group)
+	mtx := sync.Mutex{}
+	for num := begin; num < (end +1); num++ {
+		num := num
+		grp.Go( func() error {
+			return walk_on_menu_page(w, filter_url, num, func(data []*transform_html.TransformMap, page_num uint) {
+				mtx.Lock()
+				defer mtx.Unlock()
+				consumer(data, page_num)
+			})
+		})
+	}
+	err = grp.Wait()
+	return
+}
+
+
+func walk_on_menu_page(w *Walker, filter_url string, num uint, consumer ConsumerType) (err error) {
+	var menu *transform_html.TransformMap
+	menu, err = w.parse_menu_page(filter_url, num)
+	if err != nil {
+		return err
+	}
+	menu_items := extract_value[*transform_html.TransformList](menu, `menu_items`)
+	if menu_items == nil {
+		consumer([]*map[string]any{}, num)
+		return nil
+	}
+	card_data_list := []*transform_html.TransformMap{}
+	for _, card_any := range *menu_items {
+		card := card_any.(*transform_html.TransformMap)
+		var card_data *transform_html.TransformMap
+		card_data, err = w.parse_card_page((*card)[`url`].(string))
+		if err != nil {
+			return err
+		}
+		card_data_list = append(card_data_list, card_data)
+	}
+	consumer(card_data_list, num)
+	return nil
 }

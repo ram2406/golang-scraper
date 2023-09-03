@@ -1,6 +1,6 @@
-module github.com/olliefr/docker-gs-ping
+module ram2406.ru/scraper
 
-go 1.19
+go 1.20
 
 replace modules/transform_html v1.0.0 => ./transform_html
 
@@ -10,11 +10,14 @@ require github.com/labstack/echo/v4 v4.10.2
 
 require github.com/akamensky/argparse v1.4.0
 
-require github.com/avast/retry-go v3.0.0+incompatible // indirect
+require (
+	github.com/avast/retry-go v3.0.0+incompatible // indirect
+	golang.org/x/sync v0.3.0 // indirect
+)
 
 require modules/utils v1.0.0
-replace modules/utils v1.0.0 => ./utils
 
+replace modules/utils v1.0.0 => ./utils
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.1

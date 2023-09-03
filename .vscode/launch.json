@@ -15,11 +15,14 @@
       "program": "${workspaceFolder}",
       "args": [
         "-b", "2", 
-        "-e", "2",
-        "-p", "L:\\dev\\property_globber\\aparts\\dags\\etl-config.yaml",
+        "-e", "5",
+        "-p", "./etl-config.yaml",
         "-s", "propertyfinder",
         "-f", "/en/search?c=1&ob=mr&pf=0&pt=1000000",
-        "-o", "./output.json",
+        "-o", "${workspaceFolder}/output.json",
+
+        //  "-m", "1",
+        "-d"
       ]
     }
   ]
