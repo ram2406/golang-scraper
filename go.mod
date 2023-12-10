@@ -2,22 +2,15 @@ module ram2406.ru/scraper
 
 go 1.20
 
-replace modules/transform_html v1.0.0 => ./transform_html
-
-require modules/transform_html v1.0.0
-
-require github.com/labstack/echo/v4 v4.10.2
-
-require github.com/akamensky/argparse v1.4.0
-
-require (
-	github.com/avast/retry-go v3.0.0+incompatible // indirect
-	golang.org/x/sync v0.3.0 // indirect
+replace (
+	modules/transform_html v1.0.0 => ./transform_html
+	modules/utils v1.0.0 => ./utils
 )
 
-require modules/utils v1.0.0
-
-replace modules/utils v1.0.0 => ./utils
+require (
+	modules/transform_html v1.0.0
+	modules/utils v1.0.0
+) 
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.1
@@ -45,5 +38,10 @@ require (
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/yaml.v3 v3.0.1
+
+	github.com/labstack/echo/v4 v4.10.2
+	github.com/akamensky/argparse v1.4.0
+	github.com/avast/retry-go v3.0.0+incompatible // indirect
+	golang.org/x/sync v0.3.0 // indirect
 
 )

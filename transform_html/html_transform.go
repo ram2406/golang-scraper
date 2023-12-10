@@ -1,7 +1,6 @@
 package transform_html
 
 import (
-	"container/list"
 	"errors"
 	"fmt"
 	"io"
@@ -36,7 +35,7 @@ func _handle_attr(selected_soup goquery.Selection, attr_name string) string {
 }
 
 func _transform_html_1(
-	transformed_data *ListMapUnion,
+	transformed_data IListMapUnion,
 	soup *html.Node,
 	rule []*ParserTransfromRule,
 	level int,
@@ -55,7 +54,7 @@ func _transform_html_1(
 
 
 func _transform_html_2(
-	transformed_data *ListMapUnion,
+	transformed_data IListMapUnion,
 	soup *html.Node,
 	rule *ParserTransfromRule,
 	level int,
@@ -65,16 +64,16 @@ func _transform_html_2(
 		err = errors.New(fmt.Sprintf(`level [%d] greater than limit [%d]`, level, limit))
 		return
 	}
-
+	
 	selected_soup := goquery.NewDocumentFromNode(soup)
-	var transformed_data_out *ListMapUnion = transformed_data
+	var transformed_data_out IListMapUnion = transformed_data
 
 	if rule.Grouping != `` && !transformed_data.is_list() {
 		transformed_data_out = transformed_data
 	}
 
 	if rule.Grouping != `` && transformed_data.is_list() {
-		transformed_data_out = &ListMapUnion{ is_list_flag: false }
+		transformed_data_out = ListWrapper{}
 		transformed_data.pack(transformed_data_out.extract(), ``)
 	}
 	
@@ -107,7 +106,7 @@ func _transform_html_2(
 			return
 		}
 		if len(tags) > 1 {
-			nested_data := &ListMapUnion{is_list_flag: true}
+			nested_data := &ListWrapper{}
 		
 			for _, tag := range tags {
 				err = _transform_html_2(nested_data, tag, &rule_override, level +1, limit)
@@ -169,7 +168,7 @@ func TransformHtml(
 	soup *goquery.Document,
 	rule []*ParserTransfromRule,
 ) (error) {
-	data := &ListMapUnion{ is_list_flag: false, mp: transformed_data }
+	data := MapWrapper{ mapw: transformed_data }
 	return _transform_html_1(data, soup.Get(0), rule, 1, 1000)
 }
 
@@ -198,10 +197,10 @@ func TransformHtmlReader(
 
 
 func TransformHtmlList(
-	transformed_data *list.List,
+	transformed_data *[]any,
 	soup *goquery.Document,
 	rule []*ParserTransfromRule,
 ) {
-	data := &ListMapUnion{ is_list_flag: true }
+	data := ListWrapper{listw: transformed_data}
 	_transform_html_1(data, soup.Get(0), rule, 1, 1000)
 }

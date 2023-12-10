@@ -31,55 +31,68 @@ type TransformData interface {
 	list.List | map[string]interface{}
 }
 
-type ListMapUnion struct {
-	lst *TransformList
-	mp *TransformMap
-	
-	is_list_flag bool
+type IListMapUnion interface {
+	is_list() bool
+	is_dict() bool
+	pack(value any, key string)
+	extract() any
 }
 
-func (u *ListMapUnion) is_list() bool {
-	return u.is_list_flag
+type ListWrapper struct {
+	listw *TransformList
+}
+
+type MapWrapper struct {
+	mapw *TransformMap
+}
+
+func (u ListWrapper) is_list() bool {
+	return true
 }
 
 
-func (u *ListMapUnion) is_dict() bool {
+func (u ListWrapper) is_dict() bool {
 	return !u.is_list()
 }
 
-func (u *ListMapUnion) use_dict() *TransformMap {
-	if !u.is_dict() {
-		panic(`data is not a dict`)
-	}
-	if u.mp == nil {
-		u.mp = &TransformMap{}
-	}
-	return u.mp
+
+func (u MapWrapper) is_list() bool {
+	return false
 }
 
-func (u *ListMapUnion) use_list() *TransformList {
-	if !u.is_list() {
-		panic(`data is not a list`)
+func (u ListWrapper) get() *TransformList {
+	if (u.listw == nil) {
+		u.listw = &TransformList{}
 	}
-	if u.lst == nil {
-		u.lst = &TransformList{}
-	}
-	return u.lst
+	return u.listw
 }
 
 
-func (u *ListMapUnion) extract() any {
-	if !u.is_list() {
-		return u.use_dict()
+func (u MapWrapper) get() *TransformMap {
+	if (u.mapw == nil) {
+		u.mapw = &TransformMap{}
 	}
-	return u.use_list()
+	return u.mapw
 }
 
-func (u *ListMapUnion) pack(value any, key string) {
-	if !u.is_list() {
-		(*u.use_dict())[key] = value
-		return
-	}
-	x := append( *u.use_list(), value)
-	u.lst = &x
+func (u MapWrapper) is_dict() bool {
+	return !u.is_list()
+}
+
+
+func (u ListWrapper) extract() any {
+	return u.get()
+}
+
+func (u MapWrapper) extract() any {
+	return u.get()
+}
+
+func (u ListWrapper) pack(value any, key string) {
+	lst := append( *u.get(), value)
+	u.listw = &lst
+}
+
+func (u MapWrapper) pack(value any, key string) {
+	(*u.get())[key] = value
 }

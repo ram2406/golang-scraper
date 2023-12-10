@@ -103,7 +103,7 @@ sources:
           mapping: cards_limit
           regex_sub_value: ['[^\d+]', '']
         - grouping: menu_items
-          selector: .card-list article.card:not(.card--community-expert)
+          selector: ul[aria-label="Properties"][role="list"] li[role="listitem"] article
           children:
             - selector: a
               children:

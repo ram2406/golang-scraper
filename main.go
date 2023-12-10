@@ -16,6 +16,7 @@ import (
 	"github.com/akamensky/argparse"
 )
 
+
 func wlk_(
 	url string, rule []* transform_html.ParserTransfromRule,
 ) {
@@ -23,7 +24,7 @@ func wlk_(
 	ret_data := map[string]any{}
 
 	req, err := http.NewRequest(`GET`, url, nil)
-	req.Header.Set(`user-agent`, `Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0`)
+	req.Header.Set(`user-agent`, `Mozilla/5.0 (Windows NT 10.0; Win64; x64; rvsca:109.0) Gecko/20100101 Firefox/113.0`)
 	resp, err := http.DefaultClient.Do(req)
 	if resp.StatusCode >= 400 {
 		fmt.Printf(`%d`, resp.StatusCode)
