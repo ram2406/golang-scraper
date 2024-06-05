@@ -1,7 +1,0 @@
-package mylib
-
-import "C"
-
-func main() {
-	return
-}
