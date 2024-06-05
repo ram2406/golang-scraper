@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  scraper:
+    build: .
+    volumes:
+      - ./etl-config.yaml:/tmp/etl-config.yaml:ro
+      - ./output.json:/tmp/output.json:rw
+    command: /scraper   -b  2     -e  2     -p  /tmp/etl-config.yaml     -s  propertyfinder     -f  "/en/search?c=1&ob=mr&pf=0&pt=1000000"     -o  /tmp/output.json  
